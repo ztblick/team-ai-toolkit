@@ -1,0 +1,8 @@
+{
+  "name": "rust-lint",
+  "description": "Runs rustfmt on every Rust file Claude edits, and clippy before Claude finishes",
+  "version": "0.1.0",
+  "author": {
+    "name": "Developer Experience PoC"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "team-standards",
+  "description": "Our style guide as a skill, plus a skill that sets up shared pre-commit hooks in any repo",
+  "version": "0.1.0",
+  "author": {
+    "name": "Developer Experience PoC"
+  }
+}

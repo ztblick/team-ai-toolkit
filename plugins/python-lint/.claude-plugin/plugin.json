@@ -1,0 +1,8 @@
+{
+  "name": "python-lint",
+  "description": "Formats and lints Python with Ruff every time Claude edits a .py file",
+  "version": "0.1.0",
+  "author": {
+    "name": "Developer Experience PoC"
+  }
+}

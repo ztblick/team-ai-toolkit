@@ -1,0 +1,12 @@
+{
+  "extraKnownMarketplaces": {
+    "team-ai-toolkit": {
+      "source": { "source": "github", "repo": "YOUR-ORG/team-ai-toolkit" }
+    }
+  },
+  "enabledPlugins": {
+    "python-lint@team-ai-toolkit": true,
+    "git-guardrails@team-ai-toolkit": true,
+    "team-standards@team-ai-toolkit": true
+  }
+}

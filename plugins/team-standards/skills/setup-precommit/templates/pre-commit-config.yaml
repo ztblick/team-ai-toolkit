@@ -1,0 +1,51 @@
+# Team-standard pre-commit hooks. Managed by the team-standards plugin.
+# Docs: https://pre-commit.com  |  Run all: pre-commit run --all-files
+# Pin versions with `pre-commit autoupdate` and commit the result.
+repos:
+  # ---- All repos -----------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  # ---- Python --------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # ---- TypeScript / JavaScript ---------------------------------------------
+  # Uses the project's own Prettier/ESLint versions from package.json.
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: npx --no-install prettier --write --ignore-unknown
+        language: system
+        types_or: [ts, tsx, javascript, jsx, json, css, markdown, yaml]
+      - id: eslint
+        name: eslint
+        entry: npx --no-install eslint --fix
+        language: system
+        types_or: [ts, tsx, javascript, jsx]
+
+  # ---- Rust ----------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --all --
+        language: system
+        types: [rust]
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy --all-targets -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false

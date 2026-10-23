@@ -1,0 +1,8 @@
+{
+  "name": "git-guardrails",
+  "description": "Stops agents from skipping git hooks, force-pushing to protected branches, or weakening linter configs",
+  "version": "0.1.0",
+  "author": {
+    "name": "Developer Experience PoC"
+  }
+}

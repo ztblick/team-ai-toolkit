@@ -1,0 +1,49 @@
+{
+  "name": "team-ai-toolkit",
+  "description": "Proof of concept: plug-and-play AI dev tooling (linters, hooks, skills) for our engineers",
+  "owner": {
+    "name": "Developer Experience PoC"
+  },
+  "plugins": [
+    {
+      "name": "python-lint",
+      "source": "./plugins/python-lint",
+      "description": "Formats and lints Python with Ruff every time Claude edits a .py file",
+      "version": "0.1.0",
+      "category": "code-quality",
+      "tags": ["python", "ruff", "lint", "format"]
+    },
+    {
+      "name": "typescript-lint",
+      "source": "./plugins/typescript-lint",
+      "description": "Runs Prettier and ESLint every time Claude edits a TypeScript or JavaScript file",
+      "version": "0.1.0",
+      "category": "code-quality",
+      "tags": ["typescript", "javascript", "eslint", "prettier"]
+    },
+    {
+      "name": "rust-lint",
+      "source": "./plugins/rust-lint",
+      "description": "Runs rustfmt on every Rust file Claude edits, and clippy before Claude finishes",
+      "version": "0.1.0",
+      "category": "code-quality",
+      "tags": ["rust", "rustfmt", "clippy"]
+    },
+    {
+      "name": "git-guardrails",
+      "source": "./plugins/git-guardrails",
+      "description": "Stops agents from skipping git hooks, force-pushing to protected branches, or weakening linter configs",
+      "version": "0.1.0",
+      "category": "security",
+      "tags": ["git", "guardrails", "pre-commit"]
+    },
+    {
+      "name": "team-standards",
+      "source": "./plugins/team-standards",
+      "description": "Our style guide as a skill, plus a skill that sets up shared pre-commit hooks in any repo",
+      "version": "0.1.0",
+      "category": "standards",
+      "tags": ["style-guide", "pre-commit", "onboarding"]
+    }
+  ]
+}

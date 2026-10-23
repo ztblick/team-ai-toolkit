@@ -1,0 +1,8 @@
+{
+  "name": "typescript-lint",
+  "description": "Runs Prettier and ESLint every time Claude edits a TypeScript or JavaScript file",
+  "version": "0.1.0",
+  "author": {
+    "name": "Developer Experience PoC"
+  }
+}
