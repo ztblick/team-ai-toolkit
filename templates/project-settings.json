@@ -1,7 +1,7 @@
 {
   "extraKnownMarketplaces": {
     "team-ai-toolkit": {
-      "source": { "source": "github", "repo": "YOUR-ORG/team-ai-toolkit" }
+      "source": { "source": "github", "repo": "ztblick/team-ai-toolkit" }
     }
   },
   "enabledPlugins": {

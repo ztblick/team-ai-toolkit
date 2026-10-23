@@ -1,7 +1,7 @@
 {
   "extraKnownMarketplaces": {
     "team-ai-toolkit": {
-      "source": { "source": "github", "repo": "YOUR-ORG/team-ai-toolkit" }
+      "source": { "source": "github", "repo": "ztblick/team-ai-toolkit" }
     }
   },
   "enabledPlugins": {
@@ -9,7 +9,7 @@
     "team-standards@team-ai-toolkit": true
   },
   "strictKnownMarketplaces": [
-    { "source": "github", "repo": "YOUR-ORG/team-ai-toolkit" },
+    { "source": "github", "repo": "ztblick/team-ai-toolkit" },
     { "source": "github", "repo": "anthropics/claude-plugins-official" }
   ]
 }

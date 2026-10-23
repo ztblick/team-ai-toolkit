@@ -23,8 +23,8 @@ they behave the same on macOS, Linux and WSL). Then whichever toolchains you use
 `rustup component add rustfmt clippy`. Missing tools are skipped silently, never blocking.
 
 ```bash
-# 1. Push this folder to a new repo (e.g. YOUR-ORG/team-ai-toolkit), then:
-claude plugin marketplace add YOUR-ORG/team-ai-toolkit
+# 1. Push this folder to a new repo (e.g. ztblick/team-ai-toolkit), then:
+claude plugin marketplace add ztblick/team-ai-toolkit
 
 # 2. Install what you want
 claude plugin install git-guardrails@team-ai-toolkit
