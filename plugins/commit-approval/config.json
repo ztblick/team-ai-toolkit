@@ -1,0 +1,43 @@
+{
+  "header": "Claude is about to make a git commit. Please review what will be committed:",
+  "question": "As a Lucid engineer, do you understand and approve these changes?",
+  "rejection_note": "Choosing No cancels the commit. Claude will stop and ask what you want changed.",
+  "staging_note": "Note: this command also stages changes, so the exact set of files is decided at commit time. Unstaged changes to tracked files (and new files it adds) are included above.",
+  "summary_failed": "Couldn't summarize the changes (git information was unavailable). Check them yourself with `git status` and `git diff --cached` before approving.",
+  "sensitive_warning": "WARNING: {path} matches sensitive pattern {pattern}. Make sure it contains no secrets.",
+  "always_ask_note": "Always reviewed: {path} matches {pattern}.",
+  "amend_note": "This rewrites the previous commit (--amend): {subject}",
+  "multiple_commits_note": "This command makes {count} commits. Only the first one is summarized.",
+  "no_message": "(no message on the command line)",
+  "claude_instruction": "Commits need human approval through the commit-approval prompt. If the user rejects a commit, do not retry it, reword it, or work around it (for example with a different git command, a script, or by committing again later). Stop and ask the user what they want changed.",
+  "max_files_listed": 15,
+  "max_message_lines": 12,
+  "min_changed_lines": 0,
+  "always_ask_paths": [
+    "migrations/**",
+    "*.tf",
+    ".github/workflows/**"
+  ],
+  "sensitive_patterns": [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+    "*.jks",
+    "*.keystore",
+    "id_rsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "credentials.json",
+    ".aws/credentials",
+    "secrets.*",
+    "*.tfstate",
+    "*.tfstate.*",
+    "*.tfvars",
+    ".npmrc",
+    ".pypirc",
+    ".netrc"
+  ]
+}

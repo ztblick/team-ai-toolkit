@@ -38,6 +38,14 @@
       "tags": ["git", "guardrails", "pre-commit"]
     },
     {
+      "name": "commit-approval",
+      "source": "./plugins/commit-approval",
+      "description": "Shows a summary of every commit Claude is about to make and asks a human to approve it",
+      "version": "0.1.0",
+      "category": "security",
+      "tags": ["git", "commit", "review", "approval"]
+    },
+    {
       "name": "team-standards",
       "source": "./plugins/team-standards",
       "description": "Our style guide as a skill, plus a skill that sets up shared pre-commit hooks in any repo",

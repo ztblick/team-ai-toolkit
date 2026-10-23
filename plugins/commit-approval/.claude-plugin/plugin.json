@@ -1,0 +1,8 @@
+{
+  "name": "commit-approval",
+  "description": "Shows a summary of every commit Claude is about to make and asks a human to approve it",
+  "version": "0.1.0",
+  "author": {
+    "name": "Developer Experience PoC"
+  }
+}

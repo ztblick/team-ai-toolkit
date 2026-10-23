@@ -10,6 +10,7 @@ installed. Run from the repo root:
 """
 
 import argparse
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -309,6 +310,247 @@ def test_lint_config_guard(tmp):
     )
 
 
+def git_repo(path):
+    path.mkdir(parents=True)
+    for cmd in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "t@example.com"],
+        ["config", "user.name", "Test"],
+    ):
+        subprocess.run(["git", *cmd], cwd=path, check=True)
+    (path / "app.py").write_text("print('hello')\n")
+    subprocess.run(["git", "add", "."], cwd=path, check=True)
+    subprocess.run(["git", "commit", "-qm", "init"], cwd=path, check=True)
+    return path
+
+
+def plugin_copy(tmp, name, config_text):
+    """A copy of commit-approval with its own config.json, so tests can change settings."""
+    dest = tmp / name
+    shutil.copytree(PLUGINS / "commit-approval", dest)
+    (dest / "config.json").write_text(config_text)
+    return dest
+
+
+def test_commit_approval(tmp):
+    print("commit-approval")
+    question = "As a Lucid engineer, do you understand and approve these changes?"
+
+    def approval(cmd, cwd, plugin_dir=PLUGINS / "commit-approval"):
+        proc = subprocess.run(
+            [sys.executable, str(plugin_dir / "scripts" / "commit_approval.py")],
+            input=json.dumps(bash_payload(cmd, cwd)),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        try:
+            out = json.loads(proc.stdout)["hookSpecificOutput"]
+            return out["permissionDecision"], out["permissionDecisionReason"]
+        except (ValueError, KeyError, TypeError):
+            return (
+                "none"
+                if proc.returncode == 0 and not proc.stdout.strip()
+                else f"exit {proc.returncode}"
+            ), proc.stderr
+
+    repo = git_repo(tmp / "approval_repo")
+    (repo / "app.py").write_text("print('hello')\nprint('world')\n")
+    subprocess.run(["git", "add", "app.py"], cwd=repo, check=True)
+    decision, reason = approval('git commit -m "Say world"', repo)
+    check(
+        "asks on a small staged change, with question and file names",
+        decision == "ask"
+        and question in reason
+        and "app.py" in reason
+        and "Say world" in reason
+        and "+1 -0" in reason,
+        f"{decision}: {reason}",
+    )
+
+    (repo / "sub").mkdir()
+    for cmd, cwd in (  # tmp itself is not a git repo
+        ("cd approval_repo/sub && git commit -m x", tmp),
+        (f"git -C {repo} commit -m x", tmp),
+        ("GIT_AUTHOR_NAME=bot git commit -m x", repo),
+        ("bash -c 'git commit -m x'", repo),
+        ("git commit -m x 2>&1 | tail -1", repo),
+    ):
+        decision, reason = approval(cmd, cwd)
+        check(
+            f"detects: {cmd.replace(str(repo), '<repo>')}",
+            decision == "ask" and "app.py" in reason,
+            f"{decision}: {reason}",
+        )
+
+    heredoc_cmd = (
+        'git commit -m "$(cat <<\'EOF\'\nAdd world\n\nExplains "why".\nEOF\n)"'
+    )
+    decision, reason = approval(heredoc_cmd, repo)
+    check(
+        "shows a heredoc commit message",
+        decision == "ask"
+        and "Add world" in reason
+        and 'Explains "why".' in reason
+        and "EOF" not in reason,
+        reason,
+    )
+    decision, reason = approval(
+        "git commit -m 'unclosed\n\nCo-Authored-By: Bot <bot@example.com>", repo
+    )
+    check(
+        "broken quoting still shows the staged file",
+        decision == "ask" and "app.py" in reason,
+        reason,
+    )
+
+    (repo / "app.py").write_text("print('hello')\nprint('world')\nprint('again')\n")
+    (repo / "new_module.py").write_text("x = 1\ny = 2\n")
+    decision, reason = approval('git add . && git commit -m "x"', repo)
+    check(
+        "`git add . && git commit` includes working-tree changes",
+        decision == "ask"
+        and "+2 -0  app.py" in reason
+        and "new_module.py" in reason
+        and "decided at commit time" in reason,
+        reason,
+    )
+    decision, reason = approval("git commit -am x", repo)
+    check(
+        "`commit -a` includes unstaged tracked changes",
+        decision == "ask"
+        and "+2 -0  app.py" in reason
+        and "new_module.py" not in reason,
+        reason,
+    )
+
+    for cmd in (
+        "git status",
+        "git log --oneline -5",
+        "git push origin main",
+        "git commit --dry-run -m x",
+        "echo git commit",
+        "git log --grep commit",
+    ):
+        check(f"doesn't prompt: {cmd}", approval(cmd, repo)[0] == "none")
+
+    (repo / ".env").write_text("API_KEY=abc\n")
+    subprocess.run(["git", "add", ".env"], cwd=repo, check=True)
+    decision, reason = approval("git commit -m secrets", repo)
+    check(
+        "warns about sensitive files",
+        "WARNING: .env matches sensitive pattern .env" in reason,
+        reason,
+    )
+    subprocess.run(["git", "reset", "-q"], cwd=repo, check=True)
+
+    config = json.loads((PLUGINS / "commit-approval" / "config.json").read_text())
+    thresholded = plugin_copy(
+        tmp, "approval_threshold", json.dumps({**config, "min_changed_lines": 50})
+    )
+    subprocess.run(["git", "add", "app.py"], cwd=repo, check=True)
+    check(
+        "doesn't prompt below min_changed_lines",
+        approval("git commit -m x", repo, thresholded)[0] == "none",
+    )
+    (repo / "migrations").mkdir()
+    (repo / "migrations" / "0001_init.sql").write_text("CREATE TABLE t (id int);\n")
+    subprocess.run(["git", "add", "migrations"], cwd=repo, check=True)
+    decision, reason = approval("git commit -m x", repo, thresholded)
+    check(
+        "always_ask_paths overrides the threshold",
+        decision == "ask"
+        and "migrations/0001_init.sql matches migrations/**" in reason,
+        reason,
+    )
+
+    broken = plugin_copy(tmp, "approval_broken", "{ this is not json")
+    decision, reason = approval("git commit -m x", repo, broken)
+    check(
+        "invalid config.json still prompts, with the default question",
+        decision == "ask" and question in reason and "config.json is invalid" in reason,
+        reason,
+    )
+
+    outside = tmp / "not_a_repo"
+    outside.mkdir()
+    decision, reason = approval("git commit -m x", outside)
+    check(
+        "still prompts when git info is unavailable",
+        decision == "ask" and "Couldn't summarize the changes" in reason,
+        reason,
+    )
+
+    spec = importlib.util.spec_from_file_location(
+        "commit_approval",
+        PLUGINS / "commit-approval" / "scripts" / "commit_approval.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    check(
+        "built-in defaults match config.json",
+        module.DEFAULTS == config,
+        f"differs in: {sorted(k for k in config if module.DEFAULTS.get(k) != config[k])}",
+    )
+
+
+def test_versions(tmp):
+    print("marketplace versions")
+    marketplace = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
+    for entry in marketplace["plugins"]:
+        manifest = json.loads(
+            (ROOT / entry["source"] / ".claude-plugin" / "plugin.json").read_text()
+        )
+        check(
+            f"{entry['name']}: plugin.json and marketplace.json versions match",
+            manifest.get("version") == entry.get("version"),
+            f"plugin.json={manifest.get('version')} marketplace.json={entry.get('version')}",
+        )
+
+    copy = tmp / "bump_copy"
+    (copy / "scripts").mkdir(parents=True)
+    shutil.copy(ROOT / "scripts" / "bump_version.py", copy / "scripts")
+    shutil.copytree(ROOT / ".claude-plugin", copy / ".claude-plugin")
+    shutil.copytree(
+        PLUGINS / "commit-approval" / ".claude-plugin",
+        copy / "plugins" / "commit-approval" / ".claude-plugin",
+    )
+    old = json.loads(
+        (
+            copy / "plugins" / "commit-approval" / ".claude-plugin" / "plugin.json"
+        ).read_text()
+    )["version"]
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(copy / "scripts" / "bump_version.py"),
+            "commit-approval",
+            "minor",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    major, minor, _ = map(int, old.split("."))
+    new = json.loads(
+        (
+            copy / "plugins" / "commit-approval" / ".claude-plugin" / "plugin.json"
+        ).read_text()
+    )["version"]
+    entry = next(
+        p
+        for p in json.loads((copy / ".claude-plugin" / "marketplace.json").read_text())[
+            "plugins"
+        ]
+        if p["name"] == "commit-approval"
+    )
+    check(
+        "bump_version.py bumps both files",
+        proc.returncode == 0 and new == entry["version"] == f"{major}.{minor + 1}.0",
+        f"exit={proc.returncode} {proc.stderr} plugin.json={new} marketplace={entry['version']}",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -323,6 +565,8 @@ def main():
         test_rust(tmp)
         test_git_guard(tmp)
         test_lint_config_guard(tmp)
+        test_commit_approval(tmp)
+        test_versions(tmp)
     passed = sum(results)
     print(f"\n{passed}/{len(results)} checks passed")
     return 0 if passed == len(results) else 1
